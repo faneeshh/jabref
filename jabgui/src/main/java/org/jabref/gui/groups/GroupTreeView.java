@@ -20,7 +20,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.css.PseudoClass;
 import javafx.geometry.Orientation;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContextMenu;
@@ -264,7 +263,6 @@ public class GroupTreeView extends BorderPane {
             Button button = IconTheme.JabRefIcons.ADD.asButton();
             button.setVisible(false);
             StackPane pane = new StackPane(button);
-            pane.setAlignment(Pos.CENTER);
 
             TreeTableCell<GroupNodeViewModel, GroupNodeViewModel> cell = new TreeTableCell<>() {
                 @Override
@@ -285,18 +283,13 @@ public class GroupTreeView extends BorderPane {
                     }
                 }
             };
-            cell.setAlignment(Pos.CENTER);
-            cell.setStyle("-fx-padding: 0;");
 
             cell.tableRowProperty().addListener((obs, oldRow, newRow) -> {
-                if (oldRow != null) {
-                    oldRow.setOnMouseEntered(null);
-                    oldRow.setOnMouseExited(null);
-                }
+                button.visibleProperty().unbind();
                 if (newRow != null) {
+                    button.visibleProperty().bind(newRow.hoverProperty());
+                } else {
                     button.setVisible(false);
-                    newRow.setOnMouseEntered(e -> button.setVisible(true));
-                    newRow.setOnMouseExited(e -> button.setVisible(false));
                 }
             });
 
