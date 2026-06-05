@@ -12,7 +12,7 @@ javaPlatform {
 val os = DefaultNativePlatform.getCurrentOperatingSystem()
 val arch = DefaultNativePlatform.getCurrentArchitecture()
 
-val javafx = "26.0.1"
+val javafx = "custom"
 
 val lucene = "10.4.0"
 

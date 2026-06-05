@@ -35,6 +35,7 @@ listOf("javafx-base", "javafx-controls", "javafx-fxml", "javafx-graphics", "java
     addJfxTarget(jfxModule, "mac", OperatingSystemFamily.MACOS, MachineArchitecture.X86_64)
     addJfxTarget(jfxModule, "mac-aarch64", OperatingSystemFamily.MACOS, MachineArchitecture.ARM64)
     addJfxTarget(jfxModule, "win", OperatingSystemFamily.WINDOWS, MachineArchitecture.X86_64)
+    addJfxTarget(jfxModule, "win-aarch64", OperatingSystemFamily.WINDOWS, MachineArchitecture.ARM64)
 }
 
 fun addJfxTarget(jfxModule: String, name: String, os: String, arch: String) {
@@ -100,11 +101,10 @@ jvmDependencyConflicts.patch {
     module("org.jabref:afterburner.fx") {
         // POM pins javafx-* to 20; strip and re-add without version so :versions platform resolves them to current
         removeDependency("org.openjfx:javafx-controls")
-        removeDependency("org.openjfx:javafx-fxml")
+        removeDependency("org.openjfx:javafx-fxml")       // line 104 — strips the POM-pinned version
         removeDependency("org.openjfx:javafx-swing")
         removeDependency("org.openjfx:javafx-web")
-        // metadata decared these as runtime only, but they are 'requires transitive' in module-info
-        addApiDependency("org.openjfx:javafx-fxml")
+        addApiDependency("org.openjfx:javafx-fxml")        // line 108 — re-adds with NO version
         addApiDependency("org.openjfx:javafx-controls")
     }
     module("org.libreoffice:libreoffice") {

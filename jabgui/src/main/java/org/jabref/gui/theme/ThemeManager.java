@@ -166,13 +166,14 @@ public class ThemeManager {
             return;
         }
 
-        if (Objects.equals(type, Theme.Type.LIGHT)) {
-            scene.getPreferences().setColorScheme(ColorScheme.LIGHT);
-        } else if (Objects.equals(type, Theme.Type.DARK)) {
-            scene.getPreferences().setColorScheme(ColorScheme.DARK);
-        } else {
-            scene.getPreferences().setColorScheme(null);
-        }
+        // TEMP STUB (local ARM): getPreferences() not on compile classpath
+        // if (Objects.equals(type, Theme.Type.LIGHT)) {
+        //     scene.getPreferences().setColorScheme(ColorScheme.LIGHT);
+        // } else if (Objects.equals(type, Theme.Type.DARK)) {
+        //     scene.getPreferences().setColorScheme(ColorScheme.DARK);
+        // } else {
+        //     scene.getPreferences().setColorScheme(null);
+        // }
     }
 
     private void updateThemeSettings() {
@@ -286,3 +287,4 @@ public class ThemeManager {
         return this.theme;
     }
 }
+

@@ -25,11 +25,13 @@ public class MainTableTooltip extends Tooltip {
 
         preview.resizeForTooltipContent();
 
-        preview.getEngine().getLoadWorker().stateProperty().addListener((_, _, newState) -> {
-            if (newState == Worker.State.SUCCEEDED) {
-                Platform.runLater(this::sizeToScene);
-            }
-        });
+        if (preview.getEngine() != null) {
+            preview.getEngine().getLoadWorker().stateProperty().addListener((_, _, newState) -> {
+                if (newState == Worker.State.SUCCEEDED) {
+                    Platform.runLater(this::sizeToScene);
+                }
+            });
+        }
     }
 
     public Tooltip createTooltip(BibDatabaseContext databaseContext, BibEntry entry, String fieldValue) {
