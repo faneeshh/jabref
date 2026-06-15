@@ -25,13 +25,11 @@ public class MainTableTooltip extends Tooltip {
 
         preview.resizeForTooltipContent();
 
-        if (preview.getEngine() != null) {
-            preview.getEngine().getLoadWorker().stateProperty().addListener((_, _, newState) -> {
-                if (newState == Worker.State.SUCCEEDED) {
-                    Platform.runLater(this::sizeToScene);
-                }
-            });
-        }
+        preview.getEngine().getLoadWorker().stateProperty().addListener((_, _, newState) -> {
+            if (newState == Worker.State.SUCCEEDED) {
+                Platform.runLater(this::sizeToScene);
+            }
+        });
     }
 
     public Tooltip createTooltip(BibDatabaseContext databaseContext, BibEntry entry, String fieldValue) {
@@ -44,6 +42,14 @@ public class MainTableTooltip extends Tooltip {
             fieldValueLabel.setText(fieldValue);
             setGraphic(fieldValueLabel);
         }
+        return this;
+    }
+
+    public Tooltip createPreviewTooltip(BibDatabaseContext databaseContext, BibEntry entry) {
+        preview.setLayout(preferences.getPreviewPreferences().getSelectedPreviewLayout());
+        preview.setDatabaseContext(databaseContext);
+        preview.setEntry(entry);
+        setGraphic(preview);
         return this;
     }
 }
