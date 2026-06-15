@@ -13,6 +13,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Worker;
 import javafx.print.PrinterJob;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.web.WebEngine;
@@ -82,7 +83,7 @@ public class PreviewViewer extends ScrollPane implements InvalidationListener {
     private final ClipBoardManager clipBoardManager;
     private final DialogService dialogService;
     private final TaskExecutor taskExecutor;
-    private final WebView previewView;
+    @Nullable private final WebView previewView;
     private final StringProperty searchQueryProperty;
     private final GuiPreferences preferences;
 
@@ -117,12 +118,23 @@ public class PreviewViewer extends ScrollPane implements InvalidationListener {
         setFitToHeight(true);
         setFitToWidth(true);
         previewView = WebViewStore.get();
-        setContent(previewView);
+        if (previewView != null) {
+            setContent(previewView);
+        } else {
+            setContent(new Label(Localization.lang("Preview unavailable: WebKit is not supported on this platform.")));
+        }
 
         configurePreviewView(themeManager);
     }
 
+    private boolean isWebViewAvailable() {
+        return previewView != null;
+    }
+
     private void configurePreviewView(ThemeManager themeManager) {
+        if (!isWebViewAvailable()) {
+            return;
+        }
         previewView.setContextMenuEnabled(false);
         previewView.getEngine().setJavaScriptEnabled(true);
         themeManager.installCssOnWebEngine(previewView.getEngine());
@@ -290,6 +302,9 @@ public class PreviewViewer extends ScrollPane implements InvalidationListener {
         if (layoutText == null) {
             return;
         }
+        if (!isWebViewAvailable()) {
+            return;
+        }
 
         String queryText = searchQueryProperty.get();
         if (StringUtil.isNotBlank(queryText)) {
@@ -302,6 +317,9 @@ public class PreviewViewer extends ScrollPane implements InvalidationListener {
     }
 
     public void print() {
+        if (!isWebViewAvailable()) {
+            return;
+        }
         PrinterJob job = PrinterJob.createPrinterJob();
         if (job == null) {
             LOGGER.warn("PrinterJob.createPrinterJob() returned null; printing not available");
@@ -337,6 +355,9 @@ public class PreviewViewer extends ScrollPane implements InvalidationListener {
             LOGGER.warn("Cannot copy preview citation: Missing entry, layout, or database context.");
             return;
         }
+        if (!isWebViewAvailable()) {
+            return;
+        }
 
         String plainText = (String) previewView.getEngine().executeScript("document.body.innerText");
         ClipboardContent content = new ClipboardContent();
@@ -347,6 +368,9 @@ public class PreviewViewer extends ScrollPane implements InvalidationListener {
     public void copySelectionToClipBoard() {
         if ((entry == null) || (layout == null) || (databaseContext == null)) {
             LOGGER.warn("Cannot copy preview citation: Missing entry, layout, or database context.");
+            return;
+        }
+        if (!isWebViewAvailable()) {
             return;
         }
 
@@ -367,6 +391,9 @@ public class PreviewViewer extends ScrollPane implements InvalidationListener {
     }
 
     public void resizeForTooltipContent() {
+        if (!isWebViewAvailable()) {
+            return;
+        }
         setFitToHeight(false);
         setVbarPolicy(ScrollBarPolicy.NEVER);
 
@@ -395,7 +422,11 @@ public class PreviewViewer extends ScrollPane implements InvalidationListener {
         });
     }
 
+    @Nullable
     public WebEngine getEngine() {
+        if (!isWebViewAvailable()) {
+            return null;
+        }
         return previewView.getEngine();
     }
 
@@ -405,6 +436,9 @@ public class PreviewViewer extends ScrollPane implements InvalidationListener {
     }
 
     public String getSelectionHtmlContent() {
+        if (!isWebViewAvailable()) {
+            return "";
+        }
         return (String) previewView.getEngine().executeScript(JS_GET_SELECTION_HTML_SCRIPT);
     }
 }

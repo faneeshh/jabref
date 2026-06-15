@@ -30,12 +30,13 @@ import org.jabref.model.entry.BibEntryTypesManager;
 
 import com.airhacks.afterburner.views.ViewLoader;
 import jakarta.inject.Inject;
+import org.jspecify.annotations.Nullable;
 
 public class AiSummaryShowingView extends VBox {
     @FXML private CheckBox markdownCheckbox;
     @FXML private Text summaryInfoText;
 
-    private WebView webView;
+    @Nullable private WebView webView;
 
     private AiSummaryShowingViewModel viewModel;
 
@@ -91,9 +92,16 @@ public class AiSummaryShowingView extends VBox {
 
     private void initializeWebView() {
         webView = WebViewStore.get();
+        if (!isWebViewAvailable()) {
+            return;
+        }
         VBox.setVgrow(webView, Priority.ALWAYS);
 
         getChildren().addFirst(webView);
+    }
+
+    private boolean isWebViewAvailable() {
+        return webView != null;
     }
 
     private void setupBindings() {
@@ -105,8 +113,12 @@ public class AiSummaryShowingView extends VBox {
     private void setupListeners() {
         BindingsHelper.listen(
                 viewModel.webViewSourceProperty(),
-                value -> UiTaskExecutor.runInJavaFXThread(() ->
-                        webView.getEngine().loadContent(StringUtil.makeSafe(value)))
+                value -> UiTaskExecutor.runInJavaFXThread(() -> {
+                    if (!isWebViewAvailable()) {
+                        return;
+                    }
+                    webView.getEngine().loadContent(StringUtil.makeSafe(value));
+                })
         );
     }
 

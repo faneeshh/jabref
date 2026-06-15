@@ -14,6 +14,7 @@ public class WebViewStore {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebViewStore.class);
     private final static Queue<WebView> WEB_VIEWS = new ArrayDeque<>();
     private static boolean isInitialized = false;
+    private static boolean webViewUnavailable = false;
     private static Configuration config;
 
     /// Initialize `WebViewStore` and preload web view instances.
@@ -40,20 +41,37 @@ public class WebViewStore {
         if (!isInitialized) {
             throw new IllegalStateException("WebViewStore is uninitialized");
         }
+        if (webViewUnavailable) {
+            return null;
+        }
         if (WEB_VIEWS.size() <= config.getMinimumNumberOfInstances()) {
             addWebViewLater();
         }
         if (hasMore()) {
             return WEB_VIEWS.poll();
         } else {
-            return new WebView();
+            try {
+                return new WebView();
+            } catch (Throwable t) {
+                webViewUnavailable = true;
+                LOGGER.warn("WebView unavailable on this platform (no WebKit native lib); returning null", t);
+                return null;
+            }
         }
     }
 
     private static void addWebViewLater() {
         Platform.runLater(() -> {
-            WEB_VIEWS.add(new WebView());
-            LOGGER.debug("Cached Web views: {}", WEB_VIEWS.size());
+            if (webViewUnavailable) {
+                return;
+            }
+            try {
+                WEB_VIEWS.add(new WebView());
+                LOGGER.debug("Cached Web views: {}", WEB_VIEWS.size());
+            } catch (Throwable t) {
+                webViewUnavailable = true;
+                LOGGER.warn("WebView unavailable on this platform (no WebKit native lib); skipping preload", t);
+            }
         });
     }
 
@@ -77,3 +95,4 @@ public class WebViewStore {
         }
     }
 }
+
