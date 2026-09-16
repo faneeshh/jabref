@@ -10,11 +10,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.Property;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 
 import org.jabref.gui.DialogService;
 import org.jabref.gui.WorkspacePreferences;
@@ -58,11 +61,15 @@ public class ManageStudyDefinitionViewModel {
     private final ObservableList<String> authors = FXCollections.observableArrayList();
     private final ObservableList<String> researchQuestions = FXCollections.observableArrayList();
     private final ObservableList<StudyQuery> queries = FXCollections.observableArrayList();
+    private final ObjectProperty<StudyQuery> selectedQuery = new SimpleObjectProperty<>();
 
     // Observe changes to each item's enabledProperty so bindings re-evaluate when catalogs are toggled
     private final ObservableList<StudyCatalogItem> catalogs = FXCollections.observableArrayList(
             item -> new javafx.beans.Observable[] {item.enabledProperty()}
     );
+
+    // Live view of catalogs restricted to those currently enabled; updates whenever a catalog's enabledProperty() changes
+    private final FilteredList<StudyCatalogItem> enabledCatalogs = new FilteredList<>(catalogs, StudyCatalogItem::isEnabled);
 
     // Hold the complement of databases for the selector
     private final SimpleStringProperty directory = new SimpleStringProperty();
@@ -202,8 +209,20 @@ public class ManageStudyDefinitionViewModel {
         return queries;
     }
 
+    public ObjectProperty<StudyQuery> getSelectedQuery() {
+        return selectedQuery;
+    }
+
+    public Property<StudyQuery> selectedQueryProperty() {
+        return selectedQuery;
+    }
+
     public ObservableList<StudyCatalogItem> getCatalogs() {
         return catalogs;
+    }
+
+    public FilteredList<StudyCatalogItem> getEnabledCatalogs() {
+        return enabledCatalogs;
     }
 
     public void addAuthor(String author) {
