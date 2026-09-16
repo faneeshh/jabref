@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -25,6 +26,7 @@ import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
+import javafx.scene.layout.Region;
 
 import org.jabref.gui.DialogService;
 import org.jabref.gui.actions.ActionHelper;
@@ -39,6 +41,7 @@ import org.jabref.model.study.Study;
 import org.jabref.model.study.StudyQuery;
 
 import com.airhacks.afterburner.views.ViewLoader;
+import com.tobiasdiez.easybind.EasyBind;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +50,14 @@ import org.slf4j.LoggerFactory;
 /// are defined in the FXML file.
 public class ManageStudyDefinitionView extends BaseDialog<SlrStudyAndDirectory> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ManageStudyDefinitionView.class);
+
+    // Default row height for the fixed cell size of the queries/catalog-override tables (matches WebSearchTab.DEFAULT_ROW_HEIGHT)
+    private static final double DEFAULT_ROW_HEIGHT = 30.0;
+
+    // Cap on how many rows queryTableView/catalogOverrideTableView grow to show before scrolling internally (matches LinkedFilesEditor.MAX_VISIBLE_ROWS)
+    private static final int MAX_VISIBLE_ROWS = 5;
+
+    private static final double HEADER_HEIGHT_ALLOWANCE = 40.0;
 
     @FXML private TextField studyTitle;
     @FXML private TextField addAuthor;
@@ -234,12 +245,53 @@ public class ManageStudyDefinitionView extends BaseDialog<SlrStudyAndDirectory> 
         setupCellFactories(queriesColumn, queriesActionColumn, StudyQuery::getQuery, viewModel::deleteQuery);
         queryTableView.setItems(viewModel.getQueries());
         viewModel.selectedQueryProperty().bind(queryTableView.getSelectionModel().selectedItemProperty());
+        EasyBind.subscribe(viewModel.selectedQueryProperty(), selectedQuery -> catalogOverrideTableView.refresh());
 
         catalogOverrideNameColumn.setReorderable(false);
         catalogOverrideNameColumn.setCellValueFactory(param -> param.getValue().nameProperty());
         catalogOverrideQueryColumn.setReorderable(false);
+        catalogOverrideQueryColumn.setCellFactory(column -> {
+            TextField textField = new TextField();
+            TableCell<StudyCatalogItem, String> cell = new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) {
+                        setGraphic(null);
+                    } else {
+                        StudyCatalogItem catalogItem = getTableView().getItems().get(getIndex());
+                        StudyQuery selectedQuery = viewModel.getSelectedQuery().get();
+                        String override = selectedQuery == null
+                                          ? ""
+                                          : selectedQuery.getCatalogSpecific().getOrDefault(catalogItem.getName(), "");
+                        textField.setText(override);
+                        setGraphic(textField);
+                    }
+                }
+            };
+            textField.focusedProperty().addListener((_, _, isNowFocused) -> {
+                if (!isNowFocused) {
+                    TableView<StudyCatalogItem> tableView = cell.getTableView();
+                    int index = cell.getIndex();
+                    if (tableView != null && index >= 0 && index < tableView.getItems().size()) {
+                        StudyQuery selectedQuery = viewModel.getSelectedQuery().get();
+                        if (selectedQuery != null) {
+                            StudyCatalogItem catalogItem = tableView.getItems().get(index);
+                            selectedQuery.getCatalogSpecific().put(catalogItem.getName(), textField.getText());
+                        }
+                    }
+                }
+            });
+            textField.setOnAction(event -> cell.getTableView().requestFocus());
+            return cell;
+        });
         catalogOverrideTableView.setItems(viewModel.getEnabledCatalogs());
         catalogOverrideTableView.setPlaceholder(new Label(Localization.lang("No catalogs enabled")));
+
+        // Both tables compete for the same limited vertical space in this fixed-height dialog, so cap each
+        // to a handful of visible rows instead of letting them grow (or sit empty) with JavaFX's default height.
+        sizeTableToVisibleRows(queryTableView, viewModel.getQueries());
+        sizeTableToVisibleRows(catalogOverrideTableView, viewModel.getEnabledCatalogs());
 
         helpIcon.setTooltip(new Tooltip(new StringJoiner("\n")
                 .add(Localization.lang("Query terms are separated by spaces."))
@@ -247,6 +299,28 @@ public class ManageStudyDefinitionView extends BaseDialog<SlrStudyAndDirectory> 
                 .add(Localization.lang("If the sequence of terms is relevant wrap them in double quotes") + "(\").")
                 .add(Localization.lang("An example:") + " rain AND (clouds OR drops) AND \"precipitation distribution\"")
                 .toString()));
+    }
+
+    /// Sizes a table to fit its actual row count (plus a flat header allowance) instead of JavaFX's default
+    /// fixed height, capping growth at [#MAX_VISIBLE_ROWS] so large lists scroll internally rather than growing
+    /// the dialog, and collapsing to just the header/placeholder when empty.
+    private static void sizeTableToVisibleRows(TableView<?> table, ObservableList<?> items) {
+        table.setFixedCellSize(DEFAULT_ROW_HEIGHT);
+        table.prefHeightProperty().bind(Bindings.createDoubleBinding(
+                () -> Math.min(items.size(), MAX_VISIBLE_ROWS) * table.getFixedCellSize() + HEADER_HEIGHT_ALLOWANCE + verticalInsets(table),
+                items,
+                table.fixedCellSizeProperty(),
+                table.insetsProperty()));
+        table.maxHeightProperty().bind(Bindings.createDoubleBinding(
+                () -> MAX_VISIBLE_ROWS * table.getFixedCellSize() + HEADER_HEIGHT_ALLOWANCE + verticalInsets(table),
+                table.fixedCellSizeProperty(),
+                table.insetsProperty()));
+        // Allow the table to collapse to just its header/placeholder when there are no items.
+        table.setMinHeight(0);
+    }
+
+    private static double verticalInsets(Region region) {
+        return region.getInsets().getTop() + region.getInsets().getBottom();
     }
 
     private void initCatalogsTab() {
