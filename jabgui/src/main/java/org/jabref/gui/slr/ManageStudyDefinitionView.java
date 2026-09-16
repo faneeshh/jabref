@@ -71,6 +71,10 @@ public class ManageStudyDefinitionView extends BaseDialog<SlrStudyAndDirectory> 
     @FXML private TableColumn<StudyQuery, String> queriesColumn;
     @FXML private TableColumn<StudyQuery, String> queriesActionColumn;
 
+    @FXML private TableView<StudyCatalogItem> catalogOverrideTableView;
+    @FXML private TableColumn<StudyCatalogItem, String> catalogOverrideNameColumn;
+    @FXML private TableColumn<StudyCatalogItem, String> catalogOverrideQueryColumn;
+
     @FXML private TableView<StudyCatalogItem> catalogTable;
     @FXML private TableColumn<StudyCatalogItem, Boolean> catalogEnabledColumn;
     @FXML private TableColumn<StudyCatalogItem, String> catalogColumn;
@@ -230,6 +234,12 @@ public class ManageStudyDefinitionView extends BaseDialog<SlrStudyAndDirectory> 
         setupCellFactories(queriesColumn, queriesActionColumn, StudyQuery::getQuery, viewModel::deleteQuery);
         queryTableView.setItems(viewModel.getQueries());
         viewModel.selectedQueryProperty().bind(queryTableView.getSelectionModel().selectedItemProperty());
+
+        catalogOverrideNameColumn.setReorderable(false);
+        catalogOverrideNameColumn.setCellValueFactory(param -> param.getValue().nameProperty());
+        catalogOverrideQueryColumn.setReorderable(false);
+        catalogOverrideTableView.setItems(viewModel.getEnabledCatalogs());
+        catalogOverrideTableView.setPlaceholder(new Label(Localization.lang("No catalogs enabled")));
 
         helpIcon.setTooltip(new Tooltip(new StringJoiner("\n")
                 .add(Localization.lang("Query terms are separated by spaces."))

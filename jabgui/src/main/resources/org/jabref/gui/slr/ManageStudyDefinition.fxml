@@ -205,6 +205,24 @@
                                         </columnResizePolicy>
                                     </TableView>
                                 </HBox>
+                                <HBox alignment="CENTER_LEFT">
+                                    <TableView
+                                            fx:id="catalogOverrideTableView"
+                                            HBox.hgrow="ALWAYS">
+                                        <columns>
+                                            <TableColumn
+                                                    fx:id="catalogOverrideNameColumn"
+                                                    text="%Catalog"/>
+                                            <TableColumn
+                                                    fx:id="catalogOverrideQueryColumn"
+                                                    text="%Native query"/>
+                                        </columns>
+                                        <columnResizePolicy>
+                                            <TableView
+                                                    fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                        </columnResizePolicy>
+                                    </TableView>
+                                </HBox>
                             </VBox>
                         </ScrollPane>
                     </Tab>
