@@ -229,6 +229,7 @@ public class ManageStudyDefinitionView extends BaseDialog<SlrStudyAndDirectory> 
         setupCommonPropertiesForTables(addQuery, this::addQuery, queriesColumn, queriesActionColumn);
         setupCellFactories(queriesColumn, queriesActionColumn, StudyQuery::getQuery, viewModel::deleteQuery);
         queryTableView.setItems(viewModel.getQueries());
+        viewModel.selectedQueryProperty().bind(queryTableView.getSelectionModel().selectedItemProperty());
 
         helpIcon.setTooltip(new Tooltip(new StringJoiner("\n")
                 .add(Localization.lang("Query terms are separated by spaces."))
